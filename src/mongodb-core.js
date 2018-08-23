@@ -36,27 +36,23 @@ Server.command = function (ns, cmd, options, callback) {
     return command.call(this, ns, cmd, options, callback);
 };
 
-// Server.insert = function (...args) {
-//     // console.error(new Error());
-//     // console.log('........');
+Server.insert = function (ns, ops, options, callback) {
+    const collection = getCollectionName(ns, this);
+    const tenant = getTenantFor(collection, options.tenant);
+    if (tenant) {
+        (ops || []).forEach((obj) => {
+            setTenant(tenant, obj);
+        });
+    }
 
-//     // const tenant = getTenant(this);
-//     // if (tenant) {
-//     //     const [, objs] = args;
+    console.log('proxy: server.insert');
+    // console.log('-----------------------------');
 
-//     //     (objs || []).forEach((obj) => {
-//     //         ensureTenant(tenant, obj);
-//     //     });
-//     // }
-
-//     // console.log('proxy: server.insert', ...args);
-//     // console.log('-----------------------------');
-
-//     return serverInsert.call(this, ...args);
-// };
+    return insert.call(this, ns, ops, options, callback);
+};
 
 Server.remove = function (ns, ops, options, callback) {
-    const collection = ns.replace(`${this.s.options.dbName}.`, '');
+    const collection = getCollectionName(ns, this);
     const tenant = getTenantFor(collection, options.tenant);
     if (tenant) {
         ops.forEach((op) => {
@@ -97,6 +93,9 @@ Server.cursor = function (ns, cmd, options) {
     return cursor.call(this, ns, cmd, options);
 };
 
+function getCollectionName(ns, server) {
+    return ns.replace(`${server.s.options.dbName}.`, '');
+}
 
 const {
     //     remove,

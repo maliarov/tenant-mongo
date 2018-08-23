@@ -68,28 +68,30 @@ describe('test', () => {
         // ]);
 
 
-        await collection.remove(
-            { _id: ObjectId("5b60362f28071f2d4bed6643") }
-        );
-        await collection.removeOne(
-            { _id: ObjectId("5b60362f28071f2d4bed6643") }
-        );
-        await collection.removeMany(
-            { _id: ObjectId("5b60362f28071f2d4bed6643") }
-        );
-        await collection.deleteOne(
-            { _id: ObjectId("5b60362f28071f2d4bed6643") }
-        );
-        await collection.deleteMany(
-            { _id: ObjectId("5b60362f28071f2d4bed6643") }
-        );
+        // await collection.remove(
+        //     { _id: ObjectId("5b60362f28071f2d4bed6643") }
+        // );
+        // await collection.removeOne(
+        //     { _id: ObjectId("5b60362f28071f2d4bed6643") }
+        // );
+        // await collection.removeMany(
+        //     { _id: ObjectId("5b60362f28071f2d4bed6643") }
+        // );
+        // await collection.deleteOne(
+        //     { _id: ObjectId("5b60362f28071f2d4bed6643") }
+        // );
+        // await collection.deleteMany(
+        //     { _id: ObjectId("5b60362f28071f2d4bed6643") }
+        // );
 
-        // const invoice5 = await collection.insert({ a: 1 });
+        await collection.insert({ a: 1 });
 
-        // const invoice51 = await collection.insertMany([
-        //     { a: 1 },
-        //     { a: 2 }
-        // ]);
+        await collection.insertOne({ a: 1 });
+
+        await collection.insertMany([
+            { a: 1 },
+            { a: 2 }
+        ]);
 
     });
 });
