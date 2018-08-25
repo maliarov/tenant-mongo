@@ -1,13 +1,16 @@
 {
-  "name": "yes",
-  "version": "1.0.0",
+  "name": "tenant-mongo",
+  "version": "0.0.1",
+  "repository": {
+    "url": "https://github.com/mujichOk/tenant-mongo"
+  },
   "description": "",
-  "main": "index.js",
+  "main": "src/lib.js",
   "scripts": {
     "test": "mocha"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "mujichOk",
+  "license": "MIT",
   "dependencies": {
     "mongodb": "3.1.3"
   },
