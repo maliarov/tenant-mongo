@@ -1,13 +1,13 @@
-const mongoTestDbConfig = {
-	connection: 'mongodb://localhost:27017/tenantmongo?safe=true&slaveOk=true&journal=true',
-	dbOptions: {
+const mongoConfig = {
+	uri: 'mongodb://localhost:27017/tenantmongo?safe=true&slaveOk=true&journal=true',
+	options: {
 		native_parser: false,
 		reaper: true,
 		strict: false
 	},
 	tenant: {
 		tenant: 123,
-		collections: ['test']
+		collections: ['test1']
 	}
 };
 
@@ -24,13 +24,13 @@ describe('basic operations', function () {
 	let result;
 
 	before(function (done) {
-		mongodb.MongoClient.connect(mongoTestDbConfig.connection, mongoTestDbConfig.dbOptions, function (err, clnt) {
+		mongodb.MongoClient.connect(mongoConfig.uri, mongoConfig.options, function (err, clnt) {
 			if (err) {
 				return done(err);
 			}
 			client = clnt;
 			database = client.db();
-			collection = database.collection('test');
+			collection = database.collection('test1');
 			done();
 		});
 	});
@@ -39,9 +39,9 @@ describe('basic operations', function () {
 		collection.remove({}, done);
 	});
 
-	after(function (done) {
-		collection.drop(done);
-	});
+	// after(function (done) {
+	// 	collection.drop(done);
+	// });
 
 	after(function () {
 		client.close();
@@ -78,13 +78,13 @@ describe('basic operations', function () {
 		let client;
 
 		before(async function () {
-			client = await mongodb.MongoClient(mongoTestDbConfig.connection, mongoTestDbConfig.dbOptions).connect();
-			decCollection = client.db().setTenant(mongoTestDbConfig.tenant).collection('test');
+			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
+			decCollection = client.db().setTenant(mongoConfig.tenant).collection('test1');
 		});
 		after(function () {
 			client.close();
 		});
-	
+
 		beforeEach(function (done) {
 			collection.insert({ _tenant: 999 }, done);
 		});
@@ -289,8 +289,8 @@ describe('basic operations', function () {
 		let client;
 
 		before(async function () {
-			client = await mongodb.MongoClient(mongoTestDbConfig.connection, mongoTestDbConfig.dbOptions).connect();
-			decCollection = client.db().setTenant(mongoTestDbConfig.tenant).setDeletionMode('hard').collection('test');
+			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
+			decCollection = client.db().setTenant(mongoConfig.tenant).setDeletionMode('hard').collection('test1');
 		});
 		after(async function () {
 			await client.close();
@@ -364,10 +364,10 @@ describe('basic operations', function () {
 
 	describe('when softDelete is false', function () {
 		let client;
-		
+
 		before(async function () {
-			client = await mongodb.MongoClient(mongoTestDbConfig.connection, mongoTestDbConfig.dbOptions).connect();
-			decCollection = client.db().setTenant(mongoTestDbConfig.tenant).setDeletionMode('hard').collection('test');
+			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
+			decCollection = client.db().setTenant(mongoConfig.tenant).setDeletionMode('hard').collection('test1');
 		});
 
 		after(async function () {
@@ -420,10 +420,10 @@ describe('basic operations', function () {
 
 	describe('when softDelete is true', function () {
 		let client;
-		
+
 		before(async function () {
-			client = await mongodb.MongoClient(mongoTestDbConfig.connection, mongoTestDbConfig.dbOptions).connect();
-			decCollection = client.db().setTenant(mongoTestDbConfig.tenant).collection('test');
+			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
+			decCollection = client.db().setTenant(mongoConfig.tenant).collection('test1');
 		});
 
 		after(async function () {

@@ -49,8 +49,14 @@ Server.cursor = function (ns, cmd, options) {
             cmd.query._deleted = { $exists: false };
         } else if (cmd.pipeline) {
             cmd.pipeline = setTenantInPipeline(tenant, cmd.pipeline);
-            cmd.pipeline[0]._deleted = { $exists: false };
+            cmd.pipeline[0].$match._deleted = { $exists: false };
         }
+    }
+
+    //console.log('cursor', JSON.stringify(cmd));
+
+    if (options.includeTenant) {
+        return cursor.call(this, ns, cmd, options);
     }
 
     return cursor
@@ -143,14 +149,23 @@ Object
 
 Db.setTenant = function ({ tenant, collections }) {
     assert(tenant, 'no tenant defined');
-    assert(collections && collections.length, 'no tenant collections defined');
+    assert((typeof collections === 'undefined') || (Array.isArray(collections) && collections.length), 'tenant collection should contains at least one collection');
 
-    this.s.options.tenant = {
-        tenant,
-        collections
-    };
+
+    if (typeof tenant !== 'undefined') {
+        this.s.options.tenant = this.s.options.tenant || {};
+        this.s.options.tenant.tenant = tenant;
+    }
+    if (typeof collections !== 'undefined') {
+        this.s.options.tenant = this.s.options.tenant || {};
+        this.s.options.tenant.collections = [...collections];
+    }
 
     return this;
+};
+
+Db.getTenant = function () {
+    return this.s.options.tenant && this.s.options.tenant.tenant;
 };
 
 Db.setDeletionMode = function (mode) {

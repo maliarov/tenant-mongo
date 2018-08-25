@@ -8,8 +8,8 @@ utils.executeOperation = function (topology, operation, args, options) {
         const optsArgumentIndex = args.length - 2;
         const opts = {
             ...(args[optsArgumentIndex] || {}),
-            tenant: collection.s.db.options.tenant,
-            deletionMode: collection.s.db.options.deletionMode
+            tenant: collection.s.options.tenant || collection.s.db.options.tenant,
+            deletionMode: collection.s.options.deletionMode || collection.s.db.options.deletionMode
         };
         args[optsArgumentIndex] = opts;
     }
