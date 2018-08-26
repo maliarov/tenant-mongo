@@ -1,18 +1,10 @@
-const mongoConfig = {
-	uri: 'mongodb://localhost:27017/tenantmongo?safe=true&slaveOk=true&journal=true',
-	options: {
-		native_parser: false,
-		reaper: true,
-		strict: false
-	},
-	tenant: {
-		tenant: 123,
-		collections: ['test1']
-	}
+const config = require('./config');
+const { MongoClient } = require('../src/lib');
+
+const tenantConfig = {
+	tenant: 123,
+	collections: ['test1']
 };
-
-const mongodb = require('../src/lib');
-
 
 describe('basic operations', function () {
 
@@ -24,7 +16,7 @@ describe('basic operations', function () {
 	let result;
 
 	before(function (done) {
-		mongodb.MongoClient.connect(mongoConfig.uri, mongoConfig.options, function (err, clnt) {
+		MongoClient.connect(config.uri, config.options, function (err, clnt) {
 			if (err) {
 				return done(err);
 			}
@@ -78,8 +70,8 @@ describe('basic operations', function () {
 		let client;
 
 		before(async function () {
-			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
-			decCollection = client.db().setTenant(mongoConfig.tenant).collection('test1');
+			client = await MongoClient(config.uri, config.options).connect();
+			decCollection = client.db().setTenant(tenantConfig).collection('test1');
 		});
 		after(function () {
 			client.close();
@@ -289,8 +281,8 @@ describe('basic operations', function () {
 		let client;
 
 		before(async function () {
-			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
-			decCollection = client.db().setTenant(mongoConfig.tenant).setDeletionMode('hard').collection('test1');
+			client = await MongoClient(config.uri, config.options).connect();
+			decCollection = client.db().setTenant(tenantConfig).setDeletionMode('hard').collection('test1');
 		});
 		after(async function () {
 			await client.close();
@@ -366,8 +358,8 @@ describe('basic operations', function () {
 		let client;
 
 		before(async function () {
-			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
-			decCollection = client.db().setTenant(mongoConfig.tenant).setDeletionMode('hard').collection('test1');
+			client = await MongoClient(config.uri, config.options).connect();
+			decCollection = client.db().setTenant(tenantConfig).setDeletionMode('hard').collection('test1');
 		});
 
 		after(async function () {
@@ -422,8 +414,8 @@ describe('basic operations', function () {
 		let client;
 
 		before(async function () {
-			client = await mongodb.MongoClient(mongoConfig.uri, mongoConfig.options).connect();
-			decCollection = client.db().setTenant(mongoConfig.tenant).collection('test1');
+			client = await MongoClient(config.uri, config.options).connect();
+			decCollection = client.db().setTenant(tenantConfig).collection('test1');
 		});
 
 		after(async function () {

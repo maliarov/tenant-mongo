@@ -12,14 +12,12 @@ const {
 } = Server;
 
 Server.command = function (ns, cmd, options, callback) {
-    const collection = cmd.count || cmd.findAndModify;
-    const tenant = getTenantFor(collection, options.tenant);
-
-    //console.log('----------------command', tenant, cmd);
-
+    const { tenant } = options;
     if (tenant) {
-        cmd.query = setTenant(tenant, cmd.query || {});
-        cmd.query._deleted = { $exists: false };
+        cmd.query = cmd.query || {};
+
+        injectTenant(tenant, cmd.query);
+        injectSoftDeleteCheck(cmd.query);
 
         if (cmd.update) {
             removeTenant(cmd.update.$set);
@@ -36,20 +34,21 @@ Server.command = function (ns, cmd, options, callback) {
         }
     }
 
+    //console.log('----------------command', tenant, cmd);
     return command.call(this, ns, cmd, options, callback);
 };
 
 Server.cursor = function (ns, cmd, options) {
-    const collection = getCollectionName(ns, this);
-    const tenant = getTenantFor(collection, options.tenant);
-
+    const { tenant } = options;
     if (tenant) {
         if (cmd.query) {
-            setTenant(tenant, cmd.query);
-            cmd.query._deleted = { $exists: false };
+            injectTenant(tenant, cmd.query);
+            injectSoftDeleteCheck(cmd.query);
         } else if (cmd.pipeline) {
-            cmd.pipeline = setTenantInPipeline(tenant, cmd.pipeline);
-            cmd.pipeline[0].$match._deleted = { $exists: false };
+            cmd.pipeline = Array.isArray(cmd.pipeline) ? cmd.pipeline : [cmd.pipeline];
+            
+            injectTenantInPipeline(tenant, cmd.pipeline);
+            injectSoftDeleteCheck(cmd.pipeline[0].$match);
         }
     }
 
@@ -68,17 +67,15 @@ Object
     .entries({ insert, remove, update })
     .forEach(([name, method]) => {
         Server[name] = function (ns, ops, options, callback) {
-            const collection = getCollectionName(ns, this);
-            const tenant = getTenantFor(collection, options.tenant);
-
-            //console.log(`----------------${name}`, tenant, ops, options);
-
+            const { tenant } = options;
             if (tenant) {
                 switch (true) {
                     case method === update:
                         (ops || []).forEach((op) => {
-                            op.q = setTenant(tenant, op.q || {});
-                            op.q._deleted = { $exists: false };
+                            op.q = op.q || {};
+                            
+                            injectTenant(tenant, op.q);
+                            injectSoftDeleteCheck(op.q);
 
                             op.u = op.u || {};
 
@@ -101,7 +98,7 @@ Object
 
                     case method === insert:
                         (ops || []).forEach((op) => {
-                            setTenant(tenant, op);
+                            injectTenant(tenant, op);
                             op.createdDate = new Date();
                             op.lastModifiedDate = new Date();
                         });
@@ -109,12 +106,19 @@ Object
 
                     case method === remove:
                         if (!options.deletionMode /* soft */) {
-                            return Server.update.call(this, ns, ops, { ...options, forceSoftDelete: true }, callback);
+                            return Server.update.call(
+                                this,
+                                ns,
+                                [{ ...ops, multi: !options.single }],
+                                { ...options, forceSoftDelete: true },
+                                callback
+                            );
                         }
 
                         (ops || []).forEach((op) => {
-                            op.q = setTenant(tenant, op.q || {});
-                            op.q._deleted = { $exists: false };
+                            op.q = op.q || {};
+                            injectTenant(tenant, op.q);
+                            injectSoftDeleteCheck(op.q);
                         });
                         break;
                 }
@@ -142,6 +146,7 @@ Object
                 }
             }
 
+            //console.log(`----------------${name}`, options, JSON.stringify(ops));
             return method.call(this, ns, ops, options, callback);
         };
     });
@@ -150,7 +155,6 @@ Object
 Db.setTenant = function ({ tenant, collections }) {
     assert(tenant, 'no tenant defined');
     assert((typeof collections === 'undefined') || (Array.isArray(collections) && collections.length), 'tenant collection should contains at least one collection');
-
 
     if (typeof tenant !== 'undefined') {
         this.s.options.tenant = this.s.options.tenant || {};
@@ -168,6 +172,11 @@ Db.getTenant = function () {
     return this.s.options.tenant && this.s.options.tenant.tenant;
 };
 
+Db.clearTeant = function () {
+    delete this.s.options.tenant;
+    return this;
+};
+
 Db.setDeletionMode = function (mode) {
     assert(['soft', 'hard'].includes(mode), 'mode could be only soft or hard');
 
@@ -180,128 +189,49 @@ Db.setDeletionMode = function (mode) {
     return this;
 };
 
-
-
 const {
-    //     remove,
-    //     save,
     find,
-    //     findOne,
-
-    //     count,
-    //     estimatedDocumentCount,
-
-    //     countDocuments,
-    //     distinct,
-
-    //     findOneAndDelete,
-    //     findOneAndReplace,
-    //     findOneAndUpdate,
-    //     findAndModify,
-    //     findAndRemove,
-
     aggregate,
-    //     watch,
-
-    //     geoHaystackSearch,
-    //     group,
-    //     mapReduce,
-
 } = Collection;
 
-// Collection.prototype.remove = deprecate(function(selector, options, callback) {
-//     return save.call(this, doc, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
+Collection.setTenant = function (tenant) {
+    assert(tenant, 'no tenant defined');
 
-// Collection.save = function(doc, options, callback) {
-//     return save.call(this, doc, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
+    this.s.options.tenant = tenant;
+
+    return this;
+};
+
+Collection.getTenant = function () {
+    if (this.s.options.tenant) {
+        return this.s.options.tenant;
+    }
+
+    const { tenant, collections } = this.s.db.options.tenant || {};
+    if (!tenant) {
+        return null;
+    }
+
+    return collections.includes(this.s.name)
+        ? tenant
+        : null;
+};
+
+Collection.clearTenant = function () {
+    delete this.s.options.tenant;
+    return this;
+};
 
 Collection.find = function (query, options, callback) {
     // todo: undefined arguments remapping
-    return find.call(this, query, { ...options, tenant: this.s.db.options.tenant }, callback);
+    return find.call(this, query, { ...options, tenant: this.getTenant() }, callback);
 };
-
-// Collection.findOne = function (query, options, callback) {
-//     return findOne.call(this, query, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.count = function(query, options, callback) {
-//     return count.call(this, query, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.estimatedDocumentCount = function(options, callback) {
-//     throw new Error('not implemented yet');
-// };
-
-
-// Collection.countDocuments = function(query, options, callback) {
-//     return countDocuments(query, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.distinct = function (key, query, options, callback) {
-//     return distinct.call(this, key, query, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.findOneAndDelete = function (filter, options, callback) {
-//     return findOneAndDelete.call(this, filter, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.findOneAndReplace = function (filter, replacement, options, callback) {
-//     return findOneAndReplace.call(this, filter, replacement, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.findOneAndUpdate = function (filter, update, options, callback) {
-//     return findOneAndUpdate.call(this, filter, update, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.findAndModify = function (query, sort, doc, options, callback) {
-//     return findAndModify.call(this, query, sort, doc, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.findAndRemove = function (query, sort, options, callback) {
-//     return findAndRemove.call(this, query, sort, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
 
 Collection.aggregate = function (pipeline, options, callback) {
     // todo: undefined arguments remapping
-    return aggregate.call(this, pipeline, { ...(options || {}), tenant: this.s.db.options.tenant }, callback);
+    return aggregate.call(this, pipeline, { ...(options || {}), tenant: this.getTenant() }, callback);
 };
 
-// Collection.watch = function (pipeline, options) {
-//     return watch.call(this, pipeline, { ...options, tenant: this.s.db.options.tenant });
-// };
-
-// Collection.geoHaystackSearch = function (x, y, options, callback) {
-//     return geoHaystackSearch.call(this, x, y, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-// Collection.group = function (keys, condition, initial, reduce, finalize, command, options, callback) {
-//     return group.call(
-//         this,
-//         keys,
-//         condition,
-//         initial,
-//         reduce,
-//         finalize,
-//         command,
-//         { ...options, tenant: this.s.db.options.tenant },
-//         callback);
-// };
-
-// Collection.mapReduce = function (map, reduce, options, callback) {
-//     return mapReduce.call(this, map, reduce, { ...options, tenant: this.s.db.options.tenant }, callback);
-// };
-
-function getCollectionName(ns, server) {
-    return ns.replace(`${server.s.options.dbName}.`, '');
-}
-
-function getTenantFor(collection, { tenant, collections } = {}) {
-    return (typeof tenant !== 'undefined' && (collections || []).includes(collection))
-        ? tenant
-        : null;
-}
 
 function removeTenant(obj) {
     if (obj) {
@@ -310,20 +240,22 @@ function removeTenant(obj) {
     return obj;
 }
 
-function setTenant(tenant, obj) {
+function injectTenant(tenant, obj) {
     obj._tenant = tenant;
     return obj;
 }
+function injectSoftDeleteCheck(query) {
+    query._deleted = { $exists: false };
+    return query;
+}
 
-function setTenantInPipeline(tenant, pipeline) {
-    if (!Array.isArray(pipeline)) {
-        pipeline = [pipeline];
-    }
+function injectTenantInPipeline(tenant, pipeline) {
+    assert(Array.isArray(pipeline), 'pipeline should be an array');
 
     if (!pipeline[0] || !pipeline[0].$match) {
-        pipeline.unshift({ $match: setTenant(tenant, {}) });
+        pipeline.unshift({ $match: injectTenant(tenant, {}) });
     } else {
-        setTenant(tenant, pipeline[0].$match);
+        injectTenant(tenant, pipeline[0].$match);
     }
 
     return pipeline;
