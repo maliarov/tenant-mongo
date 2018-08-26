@@ -1,7 +1,7 @@
 const assert = require('assert');
 const Server = require('mongodb-core/lib/topologies/server.js').prototype;
-const Collection = require('mongodb/lib/collection.js').prototype;
 const Db = require('mongodb/lib/db.js').prototype;
+const Collection = require('mongodb/lib/collection.js').prototype;
 
 const {
     cursor,
@@ -10,6 +10,13 @@ const {
     remove,
     update,
 } = Server;
+
+const {
+    find,
+    aggregate,
+} = Collection;
+
+
 
 Server.command = function (ns, cmd, options, callback) {
     const { tenant } = options;
@@ -189,10 +196,10 @@ Db.setDeletionMode = function (mode) {
     return this;
 };
 
-const {
-    find,
-    aggregate,
-} = Collection;
+Db.getDeletionMode = function () {
+    return this.s.options.deletionMode || 'soft';
+};
+
 
 Collection.setTenant = function (tenant) {
     assert(tenant, 'no tenant defined');
