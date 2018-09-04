@@ -41,7 +41,6 @@ Server.command = function (ns, cmd, options, callback) {
         }
     }
 
-    //console.log('----------------command', tenant, cmd);
     return command.call(this, ns, cmd, options, callback);
 };
 
@@ -53,13 +52,11 @@ Server.cursor = function (ns, cmd, options) {
             injectSoftDeleteCheck(cmd.query);
         } else if (cmd.pipeline) {
             cmd.pipeline = Array.isArray(cmd.pipeline) ? cmd.pipeline : [cmd.pipeline];
-            
+
             injectTenantInPipeline(tenant, cmd.pipeline);
             injectSoftDeleteCheck(cmd.pipeline[0].$match);
         }
     }
-
-    //console.log('cursor', JSON.stringify(cmd));
 
     if (options.includeTenant) {
         return cursor.call(this, ns, cmd, options);
@@ -80,7 +77,7 @@ Object
                     case method === update:
                         (ops || []).forEach((op) => {
                             op.q = op.q || {};
-                            
+
                             injectTenant(tenant, op.q);
                             injectSoftDeleteCheck(op.q);
 
@@ -153,7 +150,6 @@ Object
                 }
             }
 
-            //console.log(`----------------${name}`, options, JSON.stringify(ops));
             return method.call(this, ns, ops, options, callback);
         };
     });
@@ -161,7 +157,10 @@ Object
 
 Db.setTenant = function ({ tenant, collections }) {
     assert(tenant, 'no tenant defined');
-    assert((typeof collections === 'undefined') || (Array.isArray(collections) && collections.length), 'tenant collection should contains at least one collection');
+    assert(
+        (typeof collections === 'undefined') || (Array.isArray(collections) && collections.length),
+        'tenant collection should contains at least one collection'
+    );
 
     if (typeof tenant !== 'undefined') {
         this.s.options.tenant = this.s.options.tenant || {};
@@ -230,15 +229,13 @@ Collection.clearTenant = function () {
 };
 
 Collection.find = function (query, options, callback) {
-    // todo: undefined arguments remapping
-    return find.call(this, query, { ...options, tenant: this.getTenant() }, callback);
+    return find.call(this, query, { ...(options || {}), tenant: this.getTenant() }, callback);
 };
 
 Collection.aggregate = function (pipeline, options, callback) {
     // todo: undefined arguments remapping
     return aggregate.call(this, pipeline, { ...(options || {}), tenant: this.getTenant() }, callback);
 };
-
 
 function removeTenant(obj) {
     if (obj) {

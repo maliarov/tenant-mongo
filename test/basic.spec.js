@@ -31,10 +31,6 @@ describe('basic operations', function () {
 		collection.remove({}, done);
 	});
 
-	// after(function (done) {
-	// 	collection.drop(done);
-	// });
-
 	after(function () {
 		client.close();
 	});
