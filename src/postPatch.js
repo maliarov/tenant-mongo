@@ -41,6 +41,10 @@ Server.command = function (ns, cmd, options, callback) {
         }
     }
 
+    //delete options.tenant;
+    //delete options.deletionMode;
+    //console.log('command', cmd)
+
     return command.call(this, ns, cmd, options, callback);
 };
 
@@ -113,7 +117,7 @@ Object
                             return Server.update.call(
                                 this,
                                 ns,
-                                [{ ...ops, multi: !options.single }],
+                                ops.map((op) => ({q: op.q, multi: !options.single})),
                                 { ...options, forceSoftDelete: true },
                                 callback
                             );

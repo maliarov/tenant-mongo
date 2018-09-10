@@ -308,6 +308,7 @@ describe('source/middleware/mongo/util/getTenantCollectionObject.js #fast #integ
         });
 
         function verify(err, doc) {
+            console.log(err, doc);
             expect(err).to.be.not.ok;
             expect(doc).to.be.not.ok;
             done();
