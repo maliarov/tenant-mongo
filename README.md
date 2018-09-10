@@ -11,6 +11,10 @@ only having one underlying physical MongoDB collection
 
 Currently supported versions of MongoDB: 3.x, 4.x
 
+Installation
+=====
+```npm i tenant-mongo```
+
 Usage
 =====
 
