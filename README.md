@@ -1,4 +1,4 @@
-tenant-mongo
+tenant-mongo (next [tenantmongo](https://github.com/debitoor/tenantmongo))
 ===========
 
 ```tenant-mongo```, is a small layer on top of the mongodb native driver for node.js. It adds the following features
@@ -56,4 +56,4 @@ Currently not supported default arguments for following collection method:
 * remove
 * aggregate
 
-so, if you going to skip query|selector or pipeline params it will not work correctly
+so, if you going to skip query|selector or pipeline params it will not work correctly.
