@@ -9,6 +9,8 @@ tenant-mongo (next [tenantmongo](https://github.com/debitoor/tenantmongo)) [![Bu
 only having one underlying physical MongoDB collection
 * Safe deletion of documents (adding _deleted property instead of phisically remove document from collection)
 
+Currently supported versions of MongoDB: 3.x, 4.x
+
 Usage
 =====
 
