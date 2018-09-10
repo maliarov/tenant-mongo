@@ -1,4 +1,4 @@
-tenant-mongo (next [tenantmongo](https://github.com/debitoor/tenantmongo))
+tenant-mongo (next [tenantmongo](https://github.com/debitoor/tenantmongo)) [![Build Status](https://travis-ci.org/mujichOk/tenant-mongo.svg?branch=master)](https://travis-ci.org/mujichOk/tenant-mongo)
 ===========
 
 ```tenant-mongo```, is a small layer on top of the mongodb native driver for node.js. It adds the following features
